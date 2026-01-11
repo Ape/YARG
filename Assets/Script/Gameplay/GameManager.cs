@@ -679,7 +679,7 @@ namespace YARG.Gameplay
             {
                 PlayerScores = _players.Select(player => new PlayerScoreCard
                 {
-                    IsHighScore = player.Score > player.LastHighScore,
+                    IsHighScore = player.LastHighScore == null || player.Score > player.LastHighScore.Value,
                     Player = player.Player,
                     Stats = player.BaseStats,
                     IsReplay = player.Player.IsReplay
