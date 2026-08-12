@@ -537,50 +537,50 @@ namespace YARG.Scores
                 .ToList();
         }
 
-        public List<PlayCountRecord> QueryPlayerMostPlayedSongs(YargProfile profile, SortOrdering ordering)
+        public List<PlayCountRecord> QueryPlayersMostPlayedSongs(IReadOnlyList<YargProfile> profiles, SortOrdering ordering)
         {
+            if (profiles.Count == 0)
+            {
+                return new List<PlayCountRecord>();
+            }
+
             var query =
-                @"SELECT GameRecords.SongChecksum, COUNT(GameRecords.Id) AS Count from GameRecords, PlayerScores
-                WHERE PlayerScores.GameRecordId = GameRecords.Id
-                    AND PlayerScores.PlayerId = ?
-                    AND PlayerScores.IsReplay = 0";
+                @"SELECT GameRecords.SongChecksum, COUNT(GameRecords.Id) AS Count FROM GameRecords
+                WHERE EXISTS (
+                    SELECT 1 FROM PlayerScores
+                    WHERE PlayerScores.GameRecordId = GameRecords.Id
+                        AND PlayerScores.IsReplay = 0
+                        AND (";
 
-            bool useAggregateDrums = profile.GameMode == GameMode.EliteDrums;
+            var profileClauses = new List<string>(profiles.Count);
+            var parameters = new List<object>();
+            foreach (var profile in profiles)
+            {
+                var clause = "(PlayerScores.PlayerId = ?";
+                parameters.Add(profile.Id);
 
-            if (useAggregateDrums)
-            {
-                query += $" AND PlayerScores.Instrument {BuildInstrumentInClause(MidiDrumkitHelper.Instruments)} ";
+                if (profile.GameMode == GameMode.EliteDrums)
+                {
+                    clause += $" AND PlayerScores.Instrument {BuildInstrumentInClause(MidiDrumkitHelper.Instruments)}";
+                    parameters.AddRange(BuildInstrumentParams(MidiDrumkitHelper.Instruments));
+                }
+                // If the profile instrument is bad, include all scores for the profile.
+                else if (profile.HasValidInstrument)
+                {
+                    clause += " AND PlayerScores.Instrument = ?";
+                    parameters.Add((int) profile.CurrentInstrument);
+                }
+
+                profileClauses.Add(clause + ")");
             }
-            // If the profile instrument is bad, we can still return all scores for the profile
-            else if (profile.HasValidInstrument)
-            {
-                query += " AND PlayerScores.Instrument = ? ";
-            }
+
+            query += string.Join(" OR ", profileClauses) + ")) ";
 
             query +=
                 $@"GROUP BY GameRecords.SongChecksum
                 ORDER BY Count {ordering.ToQueryString()}";
 
-            if (useAggregateDrums)
-            {
-                var parameters = new List<object> { profile.Id };
-                parameters.AddRange(BuildInstrumentParams(MidiDrumkitHelper.Instruments));
-                return _db.Query<PlayCountRecord>(query, parameters.ToArray());
-            }
-
-            if (profile.HasValidInstrument)
-            {
-                return _db.Query<PlayCountRecord>(
-                    query,
-                    profile.Id,
-                    (int) profile.CurrentInstrument
-                );
-            }
-
-            return _db.Query<PlayCountRecord>(
-                query,
-                profile.Id
-            );
+            return _db.Query<PlayCountRecord>(query, parameters.ToArray());
         }
 
         public List<PlayerScoreWithChecksum> QueryPlayerBestStars(

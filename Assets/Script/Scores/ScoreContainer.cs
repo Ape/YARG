@@ -533,14 +533,15 @@ namespace YARG.Scores
             }
         }
 
-        // this is the same as GetMostPlayedSongs, but is limited to the one profile and returns the entire list
-        public static Dictionary<SongEntry,int> GetPlayedSongsForUserByPlaycount(YargProfile profile, SortOrdering ordering)
+        // This is the same as GetMostPlayedSongs, but is limited to the given profiles and returns the entire list.
+        public static Dictionary<SongEntry,int> GetPlayedSongsForUsersByPlaycount(
+            IReadOnlyList<YargProfile> profiles, SortOrdering ordering)
         {
             try
             {
                 var songPlays = new Dictionary<SongEntry, int>();
 
-                var mostPlayed = _db.QueryPlayerMostPlayedSongs(profile, ordering);
+                var mostPlayed = _db.QueryPlayersMostPlayedSongs(profiles, ordering);
                 foreach (var record in mostPlayed)
                 {
                     var hash = HashWrapper.Create(record.SongChecksum);

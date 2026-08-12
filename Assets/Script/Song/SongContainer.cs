@@ -440,9 +440,12 @@ namespace YARG.Song
                 return _sortTitles;
             }
 
-            var player = PlayerContainer.Players.FirstOrDefault(e => !e.Profile.IsBot);
+            var profiles = PlayerContainer.Players
+                .Where(player => !player.Profile.IsBot)
+                .Select(player => player.Profile)
+                .ToArray();
 
-            if (player == null)
+            if (profiles.Length == 0)
             {
                 // This case should have been caught above, but just in case
                 return _sortTitles;
@@ -455,7 +458,7 @@ namespace YARG.Song
                 categorySongs[i] = new List<SongEntry>();
             }
 
-            var counts = ScoreContainer.GetPlayedSongsForUserByPlaycount(player.Profile, SortOrdering.Descending);
+            var counts = ScoreContainer.GetPlayedSongsForUsersByPlaycount(profiles, SortOrdering.Descending);
 
             // Counts will be in descending order, so we can iterate through the list until we drop below the threshold
             // and then move to the next threshold
