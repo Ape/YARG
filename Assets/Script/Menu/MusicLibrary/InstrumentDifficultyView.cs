@@ -30,6 +30,7 @@ namespace YARG.Menu.MusicLibrary
         private static readonly Color DefaultEngineColor = Color.white;
         private static readonly Color CasualEngineColor = new(0.9f, 0.3f, 0.9f);
         private static readonly Color PrecisionEngineColor = new(1f, 0.9f, 0f);
+        private static readonly Color TournamentEngineColor = new(0f, 1f, 1f);
         private static readonly Color SoloTapsEngineColor = new(0.5411765f, 0.1686275f, 0.8862746f);
         private static readonly Color CustomEngineColor = new(1f, 0.25f, 0.25f);
 
@@ -78,6 +79,7 @@ namespace YARG.Menu.MusicLibrary
             var id when id == Guid.Empty || id == EnginePreset.Default.Id => DefaultEngineColor,
             var id when id == EnginePreset.Casual.Id => CasualEngineColor,
             var id when id == EnginePreset.Precision.Id => PrecisionEngineColor,
+            var id when id == EnginePreset.Tournament.Id => TournamentEngineColor,
             var id when id == EnginePreset.SoloTaps.Id => SoloTapsEngineColor,
             _ => CustomEngineColor
         };
