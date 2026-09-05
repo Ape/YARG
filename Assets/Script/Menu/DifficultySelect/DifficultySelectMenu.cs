@@ -14,10 +14,12 @@ using YARG.Core.Song;
 using YARG.Core.Utility;
 using YARG.Helpers.Extensions;
 using YARG.Localization;
+using YARG.Menu.MusicLibrary;
 using YARG.Menu.Navigation;
 using YARG.Menu.Persistent;
 using YARG.Menu.Filters;
 using YARG.Player;
+using YARG.Scores;
 using YARG.Song;
 
 namespace YARG.Menu.DifficultySelect
@@ -86,6 +88,8 @@ namespace YARG.Menu.DifficultySelect
         private DifficultyItem _difficultyItemSmallRedPrefab;
         [SerializeField]
         private ModifierItem _modifierItemPrefab;
+        [SerializeField]
+        private InstrumentDifficultyView _highScoreBadgePrefab;
 
         private int _playerIndex;
         private int _vocalModifierSelectIndex = -1;
@@ -456,10 +460,13 @@ namespace YARG.Menu.DifficultySelect
 
         private void CreateDifficultyMenu()
         {
+            var profile = CurrentPlayer.Profile;
+            var song = GlobalVariables.State.CurrentSong;
+
             foreach (var difficulty in _possibleDifficulties)
             {
-                bool selected = CurrentPlayer.Profile.CurrentDifficulty == difficulty;
-                CreateItem(difficulty.ToLocalizedName(), selected, () =>
+                bool selected = profile.CurrentDifficulty == difficulty;
+                var item = CreateItem(difficulty.ToLocalizedName(), selected, () =>
                 {
                     CurrentPlayer.Profile.CurrentDifficulty
                         = CurrentPlayer.Profile.DifficultyFallback
@@ -468,6 +475,28 @@ namespace YARG.Menu.DifficultySelect
                     _menuState = State.Main;
                     UpdateForPlayer();
                 });
+
+                var highScore = ScoreContainer.GetPreferredHighScoreForDifficulty(
+                    song.Hash, profile.Id, profile.CurrentInstrument, difficulty, profile.EnginePreset);
+                if (highScore is not null)
+                {
+                    var badge = Instantiate(_highScoreBadgePrefab, item.transform);
+                    badge.SetInfo(new ViewType.ScoreInfo
+                    {
+                        Score = highScore.Score,
+                        Difficulty = highScore.Difficulty,
+                        Percent = highScore.GetPercent(),
+                        Instrument = highScore.Instrument,
+                        EnginePresetId = highScore.EnginePresetId,
+                        IsFc = highScore.IsFc
+                    });
+                    badge.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+
+                    var rectTransform = (RectTransform) badge.transform;
+                    rectTransform.anchorMin = new Vector2(1f, 0.5f);
+                    rectTransform.anchorMax = new Vector2(1f, 0.5f);
+                    rectTransform.anchoredPosition = new Vector2(-85f, 0f);
+                }
             }
         }
 
@@ -742,7 +771,7 @@ namespace YARG.Menu.DifficultySelect
             Navigator.Instance.PopScheme();
         }
 
-        private void CreateItem(string header, string body, bool selected, DifficultyItem difficultyItem, UnityAction a)
+        private DifficultyItem CreateItem(string header, string body, bool selected, DifficultyItem difficultyItem, UnityAction a)
         {
             var btn = Instantiate(difficultyItem, _container);
 
@@ -761,21 +790,23 @@ namespace YARG.Menu.DifficultySelect
             {
                 _navGroup.SelectLast();
             }
+
+            return btn;
         }
 
-        private void CreateItem(string body, bool selected, DifficultyItem difficultyItem, UnityAction a)
+        private DifficultyItem CreateItem(string body, bool selected, DifficultyItem difficultyItem, UnityAction a)
         {
-            CreateItem(null, body, selected, difficultyItem, a);
+            return CreateItem(null, body, selected, difficultyItem, a);
         }
 
-        private void CreateItem(string header, string body, bool selected, UnityAction a)
+        private DifficultyItem CreateItem(string header, string body, bool selected, UnityAction a)
         {
-            CreateItem(header, body, selected, _difficultyItemPrefab, a);
+            return CreateItem(header, body, selected, _difficultyItemPrefab, a);
         }
 
-        private void CreateItem(string body, bool selected, UnityAction a)
+        private DifficultyItem CreateItem(string body, bool selected, UnityAction a)
         {
-            CreateItem(null, body, selected, a);
+            return CreateItem(null, body, selected, a);
         }
 
         private string LocalizeHeader(string key)

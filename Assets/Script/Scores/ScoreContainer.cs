@@ -282,6 +282,28 @@ namespace YARG.Scores
             return GetHighScoreFromDatabase(songChecksum, playerId, instrument, preferredEnginePresetId);
         }
 
+        public static PlayerScoreRecord GetPreferredHighScoreForDifficulty(
+            HashWrapper songChecksum,
+            Guid playerId,
+            Instrument instrument,
+            Difficulty difficulty,
+            Guid? preferredEnginePresetId = null)
+        {
+            try
+            {
+                return UseHighestScore
+                    ? _db.QueryPlayerSongHighScore(
+                        songChecksum, playerId, instrument, false, true, difficulty, preferredEnginePresetId)
+                    : _db.QueryPlayerSongHighestPercentage(
+                        songChecksum, playerId, instrument, false, true, difficulty, preferredEnginePresetId);
+            }
+            catch (Exception e)
+            {
+                YargLogger.LogException(e, $"Failed to load high score from database for player with ID {playerId}.");
+                return null;
+            }
+        }
+
         public static GameRecord GetBandHighScore(HashWrapper songChecksum)
         {
             return BandHighScores.GetValueOrDefault(songChecksum);

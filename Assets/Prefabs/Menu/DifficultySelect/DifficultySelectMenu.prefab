@@ -504,6 +504,8 @@ MonoBehaviour:
     type: 3}
   _modifierItemPrefab: {fileID: 3419815060514877507, guid: 6c928df38839ed24eaa659f76c62da6b,
     type: 3}
+  _highScoreBadgePrefab: {fileID: 4906556586326073703, guid: 2757d4382315f8a46a8a0c2e76c0f881,
+    type: 3}
 --- !u!1 &2177612344681018170
 GameObject:
   m_ObjectHideFlags: 0
