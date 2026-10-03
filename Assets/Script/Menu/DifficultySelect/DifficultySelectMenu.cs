@@ -21,6 +21,7 @@ using YARG.Menu.Persistent;
 using YARG.Menu.Filters;
 using YARG.Menu.MusicLibrary;
 using YARG.Player;
+using YARG.Scores;
 using YARG.Song;
 
 namespace YARG.Menu.DifficultySelect
@@ -123,6 +124,8 @@ namespace YARG.Menu.DifficultySelect
         private GameObject _ringsItemPrefab;
         [SerializeField]
         private ModifierItem _modifierItemPrefab;
+        [SerializeField]
+        private InstrumentDifficultyView _highScoreBadgePrefab;
 
         private int _playerIndex;
         private int _vocalModifierSelectIndex = -1;
@@ -626,10 +629,13 @@ namespace YARG.Menu.DifficultySelect
 
         private void CreateDifficultyMenu()
         {
+            var profile = CurrentPlayer.Profile;
+            var song = GlobalVariables.State.CurrentSong;
+
             foreach (var difficulty in _possibleDifficulties)
             {
-                bool selected = CurrentPlayer.Profile.CurrentDifficulty == difficulty;
-                CreateItem(difficulty.ToLocalizedName(), selected, () =>
+                bool selected = profile.CurrentDifficulty == difficulty;
+                var item = CreateItem(difficulty.ToLocalizedName(), selected, () =>
                 {
                     CurrentPlayer.Profile.CurrentDifficulty
                         = CurrentPlayer.Profile.DifficultyFallback
@@ -638,6 +644,29 @@ namespace YARG.Menu.DifficultySelect
                     _menuState = State.Main;
                     UpdateForPlayer();
                 });
+
+                var highScore = ScoreContainer.GetPreferredHighScoreForDifficulty(
+                    song.Hash, profile.Id, profile.CurrentInstrument, difficulty,
+                    ScoreContainer.GetPreferredEnginePresetId(profile));
+                if (highScore is not null)
+                {
+                    var badge = Instantiate(_highScoreBadgePrefab, item.transform);
+                    badge.SetInfo(new ViewType.ScoreInfo
+                    {
+                        Score = highScore.Score,
+                        Difficulty = highScore.Difficulty,
+                        Percent = highScore.GetPercent(),
+                        Instrument = highScore.Instrument,
+                        EnginePresetId = highScore.EnginePresetId,
+                        IsFc = highScore.IsFc
+                    });
+                    badge.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+
+                    var rectTransform = (RectTransform) badge.transform;
+                    rectTransform.anchorMin = new Vector2(1f, 0.5f);
+                    rectTransform.anchorMax = new Vector2(1f, 0.5f);
+                    rectTransform.anchoredPosition = new Vector2(-85f, 0f);
+                }
             }
         }
 
